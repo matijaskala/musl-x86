@@ -462,6 +462,9 @@ fi
 # Always try -pipe
 tryflag CFLAGS_AUTO -pipe
 
+# Enable OpenMP
+tryflag CFLAGS_AUTO -fopenmp
+
 #
 # If debugging is disabled, omit frame pointer. Modern GCC does this
 # anyway on most archs even when debugging is enabled since the frame
