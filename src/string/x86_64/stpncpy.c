@@ -120,17 +120,7 @@ static char *stpncpy_internal_sse2(char *dest, const char *src, size_t n) {
 			dest += 16;
 			n -= 16;
 		}
-		if (n) {
-			__m128i chunk = _mm_loadu_si128((__m128i*)(src+n)-1);
-			_mm_storeu_si128((__m128i*)(dest+n)-1, chunk);
-			unsigned o = _mm_movemask_epi8(_mm_cmpeq_epi8(chunk, zero));
-			if (o) {
-				o = trailing_zeros(o);
-				if (o < n)
-					return dest + o;
-			}
-		}
-		return dest + n;
+		return stpncpy_internal_naive(dest, src, n);
 	}
 	size_t padding = 15 - ((uintptr_t)(dest-1) % 16);
 	if (padding) {
