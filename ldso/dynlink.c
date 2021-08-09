@@ -1047,6 +1047,10 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
 	if (strchr(name, '/')) {
 		pathname = name;
 		fd = open(name, O_RDONLY|O_CLOEXEC);
+		if (fd >= 0 && !map_library(fd, &temp_dso)) {
+			close(fd);
+			fd = -1;
+		}
 	} else {
 		/* Search for the name to see if it's already loaded */
 		for (p=head->next; p; p=p->next) {
