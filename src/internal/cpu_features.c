@@ -57,8 +57,11 @@ void __init_cpu_features(void) {
 		cpu_features.osxsave = 1;
 		uint64_t xcr = my_xgetbv(0);
 		if ((xcr & 6) == 6) {
-			if (ecx & bit_AVX) {
+			if (ecx & bit_AVX)
 				cpu_features.avx = 1;
+			if (!__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx))
+				return;
+			if (cpu_features.avx) {
 				if (ebx & bit_AVX2)
 					cpu_features.avx2 = 1;
 			}
