@@ -121,13 +121,13 @@ static int memcmp_sse2(const void *s1, const void *s2, size_t n)
 		__m128i n2 = _mm_cmpeq_epi8(l2, r2);
 		__m128i n3 = _mm_cmpeq_epi8(l3, r3);
 		__m128i n4 = _mm_cmpeq_epi8(l4, r4);
-		if (_mm_movemask_epi8(_mm_and_si128(_mm_and_si128(n1, n2), _mm_and_si128(n3, n4))) != -1) {
+		if (_mm_movemask_epi8(_mm_and_si128(_mm_and_si128(n1, n2), _mm_and_si128(n3, n4))) != 0xffff) {
 			int o;
-			if ((o = _mm_movemask_epi8(n1)) != -1)
+			if ((o = _mm_movemask_epi8(n1)) != 0xffff)
 				o = trailing_zeros(~o);
-			else if ((o = _mm_movemask_epi8(n2)) != -1)
+			else if ((o = _mm_movemask_epi8(n2)) != 0xffff)
 				o = trailing_zeros(~o) + 16;
-			else if ((o = _mm_movemask_epi8(n3)) != -1)
+			else if ((o = _mm_movemask_epi8(n3)) != 0xffff)
 				o = trailing_zeros(~o) + 32;
 			else
 				o = trailing_zeros(~_mm_movemask_epi8(n2)) + 48;
@@ -144,9 +144,9 @@ static int memcmp_sse2(const void *s1, const void *s2, size_t n)
 		__m128i r2 = _mm_loadu_si128((const __m128i*)r+1);
 		__m128i n1 = _mm_cmpeq_epi8(l1, r1);
 		__m128i n2 = _mm_cmpeq_epi8(l2, r2);
-		if (_mm_movemask_epi8(_mm_and_si128(n1, n2)) != -1) {
+		if (_mm_movemask_epi8(_mm_and_si128(n1, n2)) != 0xffff) {
 			int o;
-			if ((o = _mm_movemask_epi8(n1)) != -1)
+			if ((o = _mm_movemask_epi8(n1)) != 0xffff)
 				o = trailing_zeros(~o);
 			else
 				o = trailing_zeros(~_mm_movemask_epi8(n2)) + 16;
