@@ -374,6 +374,8 @@ static size_t strdiff_auto(const char *s1, const char *s2) {
 
 int strcasecmp(const char *s1, const char *s2) {
 	for (;;) {
+		if (!*s1 && !*s2)
+			return 0;
 		size_t o = strdiff_impl(s1, s2);
 		s1 += o;
 		s2 += o;

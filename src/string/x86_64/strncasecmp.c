@@ -210,7 +210,7 @@ static size_t strdiff_auto(const char *s1, const char *s2, size_t n) {
 
 int strncasecmp(const char *s1, const char *s2, size_t n) {
 	for (;;) {
-		if (!n)
+		if (!n || (!*s1 && !*s2))
 			return 0;
 		size_t o = strdiff_impl(s1, s2, n);
 		s1 += o;
