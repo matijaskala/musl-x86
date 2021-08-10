@@ -224,7 +224,8 @@ static int memcmp_avx2(const void *s1, const void *s2, size_t n)
 			}
 			l1 = _mm256_loadu_si256((const __m256i*)l);
 			r1 = _mm256_loadu_si256((const __m256i*)r);
-			o = trailing_zeros(~_mm256_movemask_epi8(_mm256_cmpeq_epi8(l1, r1)));
+			o = _mm256_movemask_epi8(_mm256_cmpeq_epi8(l1, r1));
+			o = o == -1 ? 32 : trailing_zeros(~o);
 			l += o;
 			r += o;
 			while (*l == *r) {
