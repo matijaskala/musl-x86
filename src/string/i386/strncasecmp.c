@@ -210,7 +210,7 @@ static size_t strdiff_auto(const char *s1, const char *s2, size_t n) {
 
 int strncasecmp(const char *s1, const char *s2, size_t n) {
 	for (;;) {
-		if (!n || (!*s1 && !*s2))
+		if (!n)
 			return 0;
 		size_t o = strdiff_impl(s1, s2, n);
 		s1 += o;
@@ -218,6 +218,8 @@ int strncasecmp(const char *s1, const char *s2, size_t n) {
 		n -= o;
 		if (tolower(*s1) != tolower(*s2))
 			return tolower(*s1) - tolower(*s2);
+		if (*s1 == 0)
+			return 0;
 		s1++;
 		s2++;
 		n--;
@@ -235,6 +237,8 @@ int __strncasecmp_l(const char *l, const char *r, size_t n, locale_t loc)
 		n -= o;
 		if (tolower_l(*l, loc) != tolower_l(*r, loc))
 			return tolower_l(*l, loc) - tolower_l(*r, loc);
+		if (*l == 0)
+			return 0;
 		l++;
 		r++;
 		n--;
