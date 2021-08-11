@@ -217,9 +217,9 @@ size_t strcspn(const char *s, const char *reject) {
 	if (!reject[0])
 		return strlen(s);
 	else if (!reject[1])
-		return strchrnul(s, reject[0]) - s;
+		return strchrnul(s, (unsigned char)reject[0]) - s;
 	else if (!reject[2])
-		return (char*)rawmemchr3_impl(s, reject[0], reject[1], reject[2]) - s;
+		return (char*)rawmemchr3_impl(s, (unsigned char)reject[0], (unsigned char)reject[1], (unsigned char)reject[2]) - s;
 	uint64_t byteset[4] = {0};
 	byteset[0] |= 1;
 	while (*reject) {

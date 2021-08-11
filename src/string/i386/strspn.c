@@ -554,11 +554,11 @@ size_t strspn(const char *s, const char *accept) {
 	if (!accept[0])
 		return 0;
 	else if (!accept[1])
-		return strspn1_impl(s, accept[0]) - s;
+		return strspn1_impl(s, (unsigned char)accept[0]) - s;
 	else if (!accept[2])
-		return strspn2_impl(s, accept[0], accept[1]) - s;
+		return strspn2_impl(s, (unsigned char)accept[0], (unsigned char)accept[1]) - s;
 	else if (!accept[3])
-		return strspn3_impl(s, accept[0], accept[1], accept[2]) - s;
+		return strspn3_impl(s, (unsigned char)accept[0], (unsigned char)accept[1], (unsigned char)accept[2]) - s;
 	uint64_t byteset[4] = {0};
 	while (*accept) {
 		byteset[(unsigned char)*accept/64] |= (uint64_t)1 << (unsigned char)*accept%64;
