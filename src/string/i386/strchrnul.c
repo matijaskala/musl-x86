@@ -31,9 +31,9 @@
 #include "cpu_features.h"
 #include "helpers.h"
 
-static void* rawmemchr2_fallback(const void *haystack, char n1, char n2) {
+static void* rawmemchr2_fallback(const void *haystack, int n1, int n2) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack == n1 || *(char*)haystack == n2)
+		if (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -45,7 +45,7 @@ static void* rawmemchr2_fallback(const void *haystack, char n1, char n2) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n1;
 		size_t m2 = *(const size_t*)haystack ^ repeated_n2;
 		if ((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits) {
-			while (*(char*)haystack != n1 && *(char*)haystack != n2)
+			while (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -54,9 +54,9 @@ static void* rawmemchr2_fallback(const void *haystack, char n1, char n2) {
 }
 
 __attribute__((__target__("sse2")))
-static void* rawmemchr2_sse2(const void *haystack, char n1, char n2) {
+static void* rawmemchr2_sse2(const void *haystack, int n1, int n2) {
 	while ((size_t)haystack % 4) {
-		if (*(char*)haystack == n1 || *(char*)haystack == n2)
+		if (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -68,7 +68,7 @@ static void* rawmemchr2_sse2(const void *haystack, char n1, char n2) {
 		uint32_t m1 = *(const uint32_t*)haystack ^ repeated_n1;
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		if ((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits) {
-			while (*(char*)haystack != n1 && *(char*)haystack != n2)
+			while (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -114,9 +114,9 @@ static void* rawmemchr2_sse2(const void *haystack, char n1, char n2) {
 }
 
 __attribute__((__target__("avx2")))
-static void* rawmemchr2_avx2(const void *haystack, char n1, char n2) {
+static void* rawmemchr2_avx2(const void *haystack, int n1, int n2) {
 	while ((size_t)haystack % 4) {
-		if (*(char*)haystack == n1 || *(char*)haystack == n2)
+		if (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -128,7 +128,7 @@ static void* rawmemchr2_avx2(const void *haystack, char n1, char n2) {
 		uint32_t m1 = *(const uint32_t*)haystack ^ repeated_n1;
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		if ((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits) {
-			while (*(char*)haystack != n1 && *(char*)haystack != n2)
+			while (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -175,11 +175,11 @@ static void* rawmemchr2_avx2(const void *haystack, char n1, char n2) {
 	}
 }
 
-static void *rawmemchr2_auto(const void *haystack, char n1, char n2);
+static void *rawmemchr2_auto(const void *haystack, int n1, int n2);
 
-static void *(*rawmemchr2_impl)(const void *haystack, char n1, char n2) = rawmemchr2_auto;
+static void *(*rawmemchr2_impl)(const void *haystack, int n1, int n2) = rawmemchr2_auto;
 
-static void *rawmemchr2_auto(const void *haystack, char n1, char n2) {
+static void *rawmemchr2_auto(const void *haystack, int n1, int n2) {
 	if (has_avx2())
 		rawmemchr2_impl = rawmemchr2_avx2;
 	else if (has_sse2())

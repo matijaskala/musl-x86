@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Matija Skala <mskala@gmx.com>
+ * Copyright (c) 2020, 2021, Matija Skala <mskala@gmx.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,9 +31,9 @@
 #include "cpu_features.h"
 #include "helpers.h"
 
-static char* strspn1_fallback(const void *haystack, char n) {
+static char* strspn1_fallback(const void *haystack, int n) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack != n)
+		if (*(unsigned char*)haystack != n)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -44,7 +44,7 @@ static char* strspn1_fallback(const void *haystack, char n) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n;
 		size_t m2 = *((const size_t*)haystack+1) ^ repeated_n;
 		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits)) {
-			while (*(char*)haystack == n)
+			while (*(unsigned char*)haystack == n)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -53,9 +53,9 @@ static char* strspn1_fallback(const void *haystack, char n) {
 }
 
 __attribute__((__target__("sse2")))
-static char* strspn1_sse2(const void *haystack, char n) {
+static char* strspn1_sse2(const void *haystack, int n) {
 	while ((size_t)haystack % 4) {
-		if (*(char*)haystack != n)
+		if (*(unsigned char*)haystack != n)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -65,7 +65,7 @@ static char* strspn1_sse2(const void *haystack, char n) {
 	while ((size_t)haystack % 16) {
 		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
 		if (!((m-lowbits) & ~m & highbits)) {
-			while (*(char*)haystack == n)
+			while (*(unsigned char*)haystack == n)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -127,9 +127,9 @@ static char* strspn1_sse2(const void *haystack, char n) {
 }
 
 __attribute__((__target__("avx2")))
-static char* strspn1_avx2(const void *haystack, char n) {
+static char* strspn1_avx2(const void *haystack, int n) {
 	while ((size_t)haystack % 4) {
-		if (*(char*)haystack != n)
+		if (*(unsigned char*)haystack != n)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -139,7 +139,7 @@ static char* strspn1_avx2(const void *haystack, char n) {
 	while ((size_t)haystack % 16) {
 		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
 		if (!((m-lowbits) & ~m & highbits)) {
-			while (*(char*)haystack == n)
+			while (*(unsigned char*)haystack == n)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -201,9 +201,9 @@ static char* strspn1_avx2(const void *haystack, char n) {
 	}
 }
 
-static char* strspn2_fallback(const void *haystack, char n1, char n2) {
+static char* strspn2_fallback(const void *haystack, int n1, int n2) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack != n1 && *(char*)haystack != n2)
+		if (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -215,7 +215,7 @@ static char* strspn2_fallback(const void *haystack, char n1, char n2) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n1;
 		size_t m2 = *(const size_t*)haystack ^ repeated_n2;
 		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits)) {
-			while (*(char*)haystack == n1 || *(char*)haystack == n2)
+			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -224,9 +224,9 @@ static char* strspn2_fallback(const void *haystack, char n1, char n2) {
 }
 
 __attribute__((__target__("sse2")))
-static char* strspn2_sse2(const void *haystack, char n1, char n2) {
+static char* strspn2_sse2(const void *haystack, int n1, int n2) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack != n1 && *(char*)haystack != n2)
+		if (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -238,7 +238,7 @@ static char* strspn2_sse2(const void *haystack, char n1, char n2) {
 		uint32_t m1 = *(const uint32_t*)haystack ^ repeated_n1;
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits)) {
-			while (*(char*)haystack == n1 || *(char*)haystack == n2)
+			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -284,9 +284,9 @@ static char* strspn2_sse2(const void *haystack, char n1, char n2) {
 }
 
 __attribute__((__target__("avx2")))
-static char* strspn2_avx2(const void *haystack, char n1, char n2) {
+static char* strspn2_avx2(const void *haystack, int n1, int n2) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack != n1 && *(char*)haystack != n2)
+		if (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -298,7 +298,7 @@ static char* strspn2_avx2(const void *haystack, char n1, char n2) {
 		uint32_t m1 = *(const uint32_t*)haystack ^ repeated_n1;
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits)) {
-			while (*(char*)haystack == n1 || *(char*)haystack == n2)
+			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -345,9 +345,9 @@ static char* strspn2_avx2(const void *haystack, char n1, char n2) {
 	}
 }
 
-static char* strspn3_fallback(const void *haystack, char n1, char n2, char n3) {
+static char* strspn3_fallback(const void *haystack, int n1, int n2, int n3) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack != n1 && *(char*)haystack != n2 && *(char*)haystack != n3)
+		if (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2 && *(unsigned char*)haystack != n3)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -361,7 +361,7 @@ static char* strspn3_fallback(const void *haystack, char n1, char n2, char n3) {
 		size_t m2 = *(const size_t*)haystack ^ repeated_n2;
 		size_t m3 = *(const size_t*)haystack ^ repeated_n3;
 		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits)) {
-			while (*(char*)haystack == n1 || *(char*)haystack == n2 || *(char*)haystack == n3)
+			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -370,9 +370,9 @@ static char* strspn3_fallback(const void *haystack, char n1, char n2, char n3) {
 }
 
 __attribute__((__target__("sse2")))
-static char* strspn3_sse2(const void *haystack, char n1, char n2, char n3) {
+static char* strspn3_sse2(const void *haystack, int n1, int n2, int n3) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack != n1 && *(char*)haystack != n2 && *(char*)haystack != n3)
+		if (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2 && *(unsigned char*)haystack != n3)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -386,7 +386,7 @@ static char* strspn3_sse2(const void *haystack, char n1, char n2, char n3) {
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		uint32_t m3 = *(const uint32_t*)haystack ^ repeated_n3;
 		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits)) {
-			while (*(char*)haystack == n1 || *(char*)haystack == n2 || *(char*)haystack == n3)
+			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -440,9 +440,9 @@ static char* strspn3_sse2(const void *haystack, char n1, char n2, char n3) {
 }
 
 __attribute__((__target__("avx2")))
-static char* strspn3_avx2(const void *haystack, char n1, char n2, char n3) {
+static char* strspn3_avx2(const void *haystack, int n1, int n2, int n3) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack != n1 && *(char*)haystack != n2 && *(char*)haystack != n3)
+		if (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2 && *(unsigned char*)haystack != n3)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -456,7 +456,7 @@ static char* strspn3_avx2(const void *haystack, char n1, char n2, char n3) {
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		uint32_t m3 = *(const uint32_t*)haystack ^ repeated_n3;
 		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits)) {
-			while (*(char*)haystack == n1 || *(char*)haystack == n2 || *(char*)haystack == n3)
+			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -512,13 +512,13 @@ static char* strspn3_avx2(const void *haystack, char n1, char n2, char n3) {
 	}
 }
 
-static char *strspn1_auto(const void *, char);
-static char *strspn2_auto(const void *, char, char);
-static char *strspn3_auto(const void *, char, char, char);
+static char *strspn1_auto(const void *, int);
+static char *strspn2_auto(const void *, int, int);
+static char *strspn3_auto(const void *, int, int, int);
 
-static char *(*strspn1_impl)(const void *, char) = strspn1_auto;
-static char *(*strspn2_impl)(const void *, char, char) = strspn2_auto;
-static char *(*strspn3_impl)(const void *, char, char, char) = strspn3_auto;
+static char *(*strspn1_impl)(const void *, int) = strspn1_auto;
+static char *(*strspn2_impl)(const void *, int, int) = strspn2_auto;
+static char *(*strspn3_impl)(const void *, int, int, int) = strspn3_auto;
 
 static void strspn_init() {
 	if (has_avx2()) {
@@ -537,15 +537,15 @@ static void strspn_init() {
 		strspn3_impl = strspn3_fallback;
 	}
 }
-static char *strspn1_auto(const void *haystack, char n1) {
+static char *strspn1_auto(const void *haystack, int n1) {
 	strspn_init();
 	return strspn1_impl(haystack, n1);
 }
-static char *strspn2_auto(const void *haystack, char n1, char n2) {
+static char *strspn2_auto(const void *haystack, int n1, int n2) {
 	strspn_init();
 	return strspn2_impl(haystack, n1, n2);
 }
-static char *strspn3_auto(const void *haystack, char n1, char n2, char n3) {
+static char *strspn3_auto(const void *haystack, int n1, int n2, int n3) {
 	strspn_init();
 	return strspn3_impl(haystack, n1, n2, n3);
 }

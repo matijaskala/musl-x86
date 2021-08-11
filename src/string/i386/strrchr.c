@@ -31,12 +31,12 @@
 #include "cpu_features.h"
 #include "helpers.h"
 
-static void* strrchr_fallback(const void *haystack, char n) {
+static void* strrchr_fallback(const void *haystack, int n) {
 	char *pn = NULL;
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack == n)
+		if (*(unsigned char*)haystack == n)
 			pn = (void*)haystack;
-		if (*(char*)haystack == 0)
+		if (*(unsigned char*)haystack == 0)
 			return pn;
 		haystack = (char*)haystack + 1;
 	}
@@ -58,12 +58,12 @@ static void* strrchr_fallback(const void *haystack, char n) {
 }
 
 __attribute__((__target__("sse2")))
-static void* strrchr_sse2(const void *haystack, char n) {
+static void* strrchr_sse2(const void *haystack, int n) {
 	char *pn = NULL;
 	while ((size_t)haystack % 4) {
-		if (*(char*)haystack == n)
+		if (*(unsigned char*)haystack == n)
 			pn = (void*)haystack;
-		if (*(char*)haystack == 0)
+		if (*(unsigned char*)haystack == 0)
 			return pn;
 		haystack = (char*)haystack + 1;
 	}
@@ -134,12 +134,12 @@ static void* strrchr_sse2(const void *haystack, char n) {
 }
 
 __attribute__((__target__("avx2")))
-static void* strrchr_avx2(const void *haystack, char n) {
+static void* strrchr_avx2(const void *haystack, int n) {
 	char *pn = NULL;
 	while ((size_t)haystack % 4) {
-		if (*(char*)haystack == n)
+		if (*(unsigned char*)haystack == n)
 			pn = (void*)haystack;
-		if (*(char*)haystack == 0)
+		if (*(unsigned char*)haystack == 0)
 			return pn;
 		haystack = (char*)haystack + 1;
 	}
@@ -211,11 +211,11 @@ static void* strrchr_avx2(const void *haystack, char n) {
 	}
 }
 
-static void *strrchr_auto(const void *s, char c);
+static void *strrchr_auto(const void *s, int c);
 
-static void *(*strrchr_impl)(const void *s, char c) = strrchr_auto;
+static void *(*strrchr_impl)(const void *s, int c) = strrchr_auto;
 
-static void *strrchr_auto(const void *s, char c) {
+static void *strrchr_auto(const void *s, int c) {
 	if (has_avx2())
 		strrchr_impl = strrchr_avx2;
 	else if (has_sse2())

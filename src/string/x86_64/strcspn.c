@@ -31,9 +31,9 @@
 #include "cpu_features.h"
 #include "helpers.h"
 
-static void* rawmemchr3_fallback(const void *haystack, char n1, char n2, char n3) {
+static void* rawmemchr3_fallback(const void *haystack, int n1, int n2, int n3) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack == n1 || *(char*)haystack == n2 || *(char*)haystack == n3)
+		if (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -47,7 +47,7 @@ static void* rawmemchr3_fallback(const void *haystack, char n1, char n2, char n3
 		size_t m2 = *(const size_t*)haystack ^ repeated_n2;
 		size_t m3 = *(const size_t*)haystack ^ repeated_n3;
 		if ((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits) {
-			while (*(char*)haystack != n1 && *(char*)haystack != n2 && *(char*)haystack != n3)
+			while (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2 && *(unsigned char*)haystack != n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -56,9 +56,9 @@ static void* rawmemchr3_fallback(const void *haystack, char n1, char n2, char n3
 }
 
 __attribute__((__target__("sse2")))
-static void* rawmemchr3_sse2(const void *haystack, char n1, char n2, char n3) {
+static void* rawmemchr3_sse2(const void *haystack, int n1, int n2, int n3) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack == n1 || *(char*)haystack == n2 || *(char*)haystack == n3)
+		if (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -72,7 +72,7 @@ static void* rawmemchr3_sse2(const void *haystack, char n1, char n2, char n3) {
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		uint32_t m3 = *(const uint32_t*)haystack ^ repeated_n3;
 		if ((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits) {
-			while (*(char*)haystack != n1 && *(char*)haystack != n2 && *(char*)haystack != n3)
+			while (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2 && *(unsigned char*)haystack != n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -126,9 +126,9 @@ static void* rawmemchr3_sse2(const void *haystack, char n1, char n2, char n3) {
 }
 
 __attribute__((__target__("avx2")))
-static void* rawmemchr3_avx2(const void *haystack, char n1, char n2, char n3) {
+static void* rawmemchr3_avx2(const void *haystack, int n1, int n2, int n3) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack == n1 || *(char*)haystack == n2 || *(char*)haystack == n3)
+		if (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -142,7 +142,7 @@ static void* rawmemchr3_avx2(const void *haystack, char n1, char n2, char n3) {
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		uint32_t m3 = *(const uint32_t*)haystack ^ repeated_n3;
 		if ((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits) {
-			while (*(char*)haystack != n1 && *(char*)haystack != n2 && *(char*)haystack != n3)
+			while (*(unsigned char*)haystack != n1 && *(unsigned char*)haystack != n2 && *(unsigned char*)haystack != n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -198,11 +198,11 @@ static void* rawmemchr3_avx2(const void *haystack, char n1, char n2, char n3) {
 	}
 }
 
-static void *rawmemchr3_auto(const void *haystack, char n1, char n2, char n3);
+static void *rawmemchr3_auto(const void *haystack, int n1, int n2, int n3);
 
-static void *(*rawmemchr3_impl)(const void *haystack, char n1, char n2, char n3) = rawmemchr3_auto;
+static void *(*rawmemchr3_impl)(const void *haystack, int n1, int n2, int n3) = rawmemchr3_auto;
 
-static void *rawmemchr3_auto(const void *haystack, char n1, char n2, char n3) {
+static void *rawmemchr3_auto(const void *haystack, int n1, int n2, int n3) {
 	if (has_avx2())
 		rawmemchr3_impl = rawmemchr3_avx2;
 	else if (has_sse2())

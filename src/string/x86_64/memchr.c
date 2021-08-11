@@ -31,10 +31,10 @@
 #include "cpu_features.h"
 #include "helpers.h"
 
-static void *memchr_fallback(const void *haystack, char needle, size_t size) {
+static void *memchr_fallback(const void *haystack, int needle, size_t size) {
 	if (size >= 2*sizeof(size_t))
 		while ((size_t)haystack % sizeof(size_t)) {
-			if (*(char*)haystack == needle)
+			if (*(unsigned char*)haystack == needle)
 				return (void*)haystack;
 			haystack = (char*)haystack + 1;
 			size--;
@@ -46,7 +46,7 @@ static void *memchr_fallback(const void *haystack, char needle, size_t size) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n;
 		size_t m2 = *((const size_t*)haystack+1) ^ repeated_n;
 		if ((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits) {
-			while (*(char*)haystack != needle)
+			while (*(unsigned char*)haystack != needle)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -54,7 +54,7 @@ static void *memchr_fallback(const void *haystack, char needle, size_t size) {
 		size -= 2*sizeof(size_t);
 	}
 	while (size) {
-		if (*(char*)haystack == needle)
+		if (*(unsigned char*)haystack == needle)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 		size--;
@@ -63,10 +63,10 @@ static void *memchr_fallback(const void *haystack, char needle, size_t size) {
 }
 
 __attribute__((__target__("sse2")))
-static void *memchr_sse2(const void *haystack, char needle, size_t size) {
+static void *memchr_sse2(const void *haystack, int needle, size_t size) {
 	if (size >= 16) {
 		while ((size_t)haystack % 4) {
-			if (*(char*)haystack == needle)
+			if (*(unsigned char*)haystack == needle)
 				return (void*)haystack;
 			haystack = (char*)haystack + 1;
 			size--;
@@ -77,7 +77,7 @@ static void *memchr_sse2(const void *haystack, char needle, size_t size) {
 		while ((size_t)haystack % 16) {
 			uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
 			if ((m-lowbits) & ~m & highbits) {
-				while (*(char*)haystack != needle)
+				while (*(unsigned char*)haystack != needle)
 					haystack = (char*)haystack + 1;
 				return (void*)haystack;
 			}
@@ -125,7 +125,7 @@ static void *memchr_sse2(const void *haystack, char needle, size_t size) {
 		size -= 16;
 	}
 	while (size) {
-		if (*(char*)haystack == needle)
+		if (*(unsigned char*)haystack == needle)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 		size--;
@@ -134,10 +134,10 @@ static void *memchr_sse2(const void *haystack, char needle, size_t size) {
 }
 
 __attribute__((__target__("avx2")))
-static void *memchr_avx2(const void *haystack, char needle, size_t size) {
+static void *memchr_avx2(const void *haystack, int needle, size_t size) {
 	if (size >= 16) {
 		while ((size_t)haystack % 4) {
-			if (*(char*)haystack == needle)
+			if (*(unsigned char*)haystack == needle)
 				return (void*)haystack;
 			haystack = (char*)haystack + 1;
 			size--;
@@ -148,7 +148,7 @@ static void *memchr_avx2(const void *haystack, char needle, size_t size) {
 		while (size >= 4 && (size_t)haystack % 32) {
 			uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
 			if ((m-lowbits) & ~m & highbits) {
-				while (*(char*)haystack != needle)
+				while (*(unsigned char*)haystack != needle)
 					haystack = (char*)haystack + 1;
 				return (void*)haystack;
 			}
@@ -198,7 +198,7 @@ static void *memchr_avx2(const void *haystack, char needle, size_t size) {
 		size -= 16;
 	}
 	while (size) {
-		if (*(char*)haystack == needle)
+		if (*(unsigned char*)haystack == needle)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 		size--;
@@ -206,11 +206,11 @@ static void *memchr_avx2(const void *haystack, char needle, size_t size) {
 	return NULL;
 }
 
-static void *memchr_auto(const void *haystack, char c, size_t n);
+static void *memchr_auto(const void *haystack, int c, size_t n);
 
-static void *(*memchr_impl)(const void *haystack, char c, size_t n) = memchr_auto;
+static void *(*memchr_impl)(const void *haystack, int c, size_t n) = memchr_auto;
 
-static void *memchr_auto(const void *haystack, char c, size_t n) {
+static void *memchr_auto(const void *haystack, int c, size_t n) {
 	if (has_avx2())
 		memchr_impl = memchr_avx2;
 	else if (has_sse2())

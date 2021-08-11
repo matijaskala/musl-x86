@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Matija Skala <mskala@gmx.com>
+ * Copyright (c) 2020, 2021, Matija Skala <mskala@gmx.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,9 +31,9 @@
 #include "cpu_features.h"
 #include "helpers.h"
 
-static void* rawmemchr_fallback(const void *haystack, char n) {
+static void* rawmemchr_fallback(const void *haystack, int n) {
 	while ((size_t)haystack % sizeof(size_t)) {
-		if (*(char*)haystack == n)
+		if (*(unsigned char*)haystack == n)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -44,7 +44,7 @@ static void* rawmemchr_fallback(const void *haystack, char n) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n;
 		size_t m2 = *((const size_t*)haystack+1) ^ repeated_n;
 		if ((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits) {
-			while (*(char*)haystack != n)
+			while (*(unsigned char*)haystack != n)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -53,9 +53,9 @@ static void* rawmemchr_fallback(const void *haystack, char n) {
 }
 
 __attribute__((__target__("sse2")))
-static void* rawmemchr_sse2(const void *haystack, char n) {
+static void* rawmemchr_sse2(const void *haystack, int n) {
 	while ((size_t)haystack % 4) {
-		if (*(char*)haystack == n)
+		if (*(unsigned char*)haystack == n)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -65,7 +65,7 @@ static void* rawmemchr_sse2(const void *haystack, char n) {
 	while ((size_t)haystack % 16) {
 		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
 		if ((m-lowbits) & ~m & highbits) {
-			while (*(char*)haystack != n)
+			while (*(unsigned char*)haystack != n)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -127,9 +127,9 @@ static void* rawmemchr_sse2(const void *haystack, char n) {
 }
 
 __attribute__((__target__("avx2")))
-static void* rawmemchr_avx2(const void *haystack, char n) {
+static void* rawmemchr_avx2(const void *haystack, int n) {
 	while ((size_t)haystack % 4) {
-		if (*(char*)haystack == n)
+		if (*(unsigned char*)haystack == n)
 			return (void*)haystack;
 		haystack = (char*)haystack + 1;
 	}
@@ -139,7 +139,7 @@ static void* rawmemchr_avx2(const void *haystack, char n) {
 	while ((size_t)haystack % 16) {
 		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
 		if ((m-lowbits) & ~m & highbits) {
-			while (*(char*)haystack != n)
+			while (*(unsigned char*)haystack != n)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
@@ -201,15 +201,20 @@ static void* rawmemchr_avx2(const void *haystack, char n) {
 	}
 }
 
+static void *rawmemchr_auto(const void *s, int c);
+
+static void *(*rawmemchr_impl)(const void *s, int) = rawmemchr_auto;
+
+static void *rawmemchr_auto(const void *s, int c) {
+	if (has_avx2())
+		rawmemchr_impl = rawmemchr_avx2;
+	else if (has_sse2())
+		rawmemchr_impl = rawmemchr_sse2;
+	else
+		rawmemchr_impl = rawmemchr_fallback;
+	return rawmemchr_impl(s, c);
+}
+
 void *rawmemchr(const void *s, int c) {
-	static void *(*rawmemchr_impl)(const void *, char) = NULL;
-	if (!rawmemchr_impl) {
-		if (has_avx2())
-			rawmemchr_impl = rawmemchr_avx2;
-		else if (has_sse2())
-			rawmemchr_impl = rawmemchr_sse2;
-		else
-			rawmemchr_impl = rawmemchr_fallback;
-	}
 	return rawmemchr_impl(s, c);
 }
