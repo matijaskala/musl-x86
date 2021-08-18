@@ -164,7 +164,7 @@ static char* strspn1_avx2(const void *haystack, int n) {
 			int mask = _mm256_movemask_epi8(eqa);
 			if (mask)
 				return (char*)haystack + trailing_zeros(~mask);
-			mask = _mm256_movemask_epi8(eqa);
+			mask = _mm256_movemask_epi8(eqb);
 			return (char*)haystack + 32 + trailing_zeros(~mask);
 		}
 		haystack = (const __m256i*)haystack + 2;
