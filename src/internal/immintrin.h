@@ -158,6 +158,24 @@ _mm_cmpeq_epi8(__m128i __a, __m128i __b)
 {
   return (__m128i)((__v16qi)__a == (__v16qi)__b);
 }
+/// Compares each of the corresponding 32-bit values of the 128-bit
+///    integer vectors for equality. Each comparison yields 0x0 for false,
+///    0xFFFFFFFF for true.
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic corresponds to the <c> VPCMPEQD / PCMPEQD </c> instruction.
+///
+/// \param __a
+///    A 128-bit integer vector.
+/// \param __b
+///    A 128-bit integer vector.
+/// \returns A 128-bit integer vector containing the comparison results.
+static __inline__ __m128i __DEFAULT_FN_ATTRS
+_mm_cmpeq_epi32(__m128i __a, __m128i __b)
+{
+  return (__m128i)((__v4si)__a == (__v4si)__b);
+}
 #ifdef __clang__
 #define _mm_bslli_si128(a, imm) \
   (__m128i)__builtin_ia32_pslldqi128_byteshift((__v2di)(__m128i)(a), (int)(imm))
@@ -249,6 +267,33 @@ _mm_set_epi8(char __b15, char __b14, char __b13, char __b12, char __b11, char __
 {
   return __extension__ (__m128i)(__v16qi){ __b0, __b1, __b2, __b3, __b4, __b5, __b6, __b7, __b8, __b9, __b10, __b11, __b12, __b13, __b14, __b15 };
 }
+/// Initializes the 32-bit values in a 128-bit vector of [4 x i32] with
+///    the specified 32-bit integer values.
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic is a utility function and does not correspond to a specific
+///    instruction.
+///
+/// \param __i3
+///    A 32-bit integer value used to initialize bits [127:96] of the
+///    destination vector.
+/// \param __i2
+///    A 32-bit integer value used to initialize bits [95:64] of the destination
+///    vector.
+/// \param __i1
+///    A 32-bit integer value used to initialize bits [63:32] of the destination
+///    vector.
+/// \param __i0
+///    A 32-bit integer value used to initialize bits [31:0] of the destination
+///    vector.
+/// \returns An initialized 128-bit vector of [4 x i32] containing the values
+///    provided in the operands.
+static __inline__ __m128i __DEFAULT_FN_ATTRS
+_mm_set_epi32(int __i3, int __i2, int __i1, int __i0)
+{
+  return __extension__ (__m128i)(__v4si){ __i0, __i1, __i2, __i3};
+}
 /// Initializes all values in a 128-bit vector of [16 x i8] with the
 ///    specified 8-bit value.
 ///
@@ -266,6 +311,24 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS
 _mm_set1_epi8(char __b)
 {
   return _mm_set_epi8(__b, __b, __b, __b, __b, __b, __b, __b, __b, __b, __b, __b, __b, __b, __b, __b);
+}
+/// Initializes all values in a 128-bit vector of [4 x i32] with the
+///    specified 32-bit value.
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic is a utility function and does not correspond to a specific
+///    instruction.
+///
+/// \param __i
+///    A 32-bit value used to initialize the elements of the destination integer
+///    vector.
+/// \returns An initialized 128-bit vector of [4 x i32] with all elements
+///    containing the value provided in the operand.
+static __inline__ __m128i __DEFAULT_FN_ATTRS
+_mm_set1_epi32(int __i)
+{
+  return _mm_set_epi32(__i, __i, __i, __i);
 }
 /// Copies the values of the most significant bits from each 8-bit
 ///    element in a 128-bit integer vector of [16 x i8] to create a 16-bit mask
@@ -542,6 +605,37 @@ _mm256_set_epi8(char __b31, char __b30, char __b29, char __b28,
     __b24, __b25, __b26, __b27, __b28, __b29, __b30, __b31
   };
 }
+/// Constructs a 256-bit integer vector initialized with the specified
+///    32-bit integral values.
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic is a utility function and does not correspond to a specific
+///   instruction.
+///
+/// \param __i0
+///    A 32-bit integral value used to initialize bits [255:224] of the result.
+/// \param __i1
+///    A 32-bit integral value used to initialize bits [223:192] of the result.
+/// \param __i2
+///    A 32-bit integral value used to initialize bits [191:160] of the result.
+/// \param __i3
+///    A 32-bit integral value used to initialize bits [159:128] of the result.
+/// \param __i4
+///    A 32-bit integral value used to initialize bits [127:96] of the result.
+/// \param __i5
+///    A 32-bit integral value used to initialize bits [95:64] of the result.
+/// \param __i6
+///    A 32-bit integral value used to initialize bits [63:32] of the result.
+/// \param __i7
+///    A 32-bit integral value used to initialize bits [31:0] of the result.
+/// \returns An initialized 256-bit integer vector.
+static __inline __m256i __DEFAULT_FN_ATTRS
+_mm256_set_epi32(int __i0, int __i1, int __i2, int __i3,
+                 int __i4, int __i5, int __i6, int __i7)
+{
+  return __extension__ (__m256i)(__v8si){ __i7, __i6, __i5, __i4, __i3, __i2, __i1, __i0 };
+}
 /// Constructs a 256-bit integer vector of [32 x i8], with each of the
 ///    8-bit integral vector elements set to the specified 8-bit integral value.
 ///
@@ -560,6 +654,24 @@ _mm256_set1_epi8(char __b)
                          __b, __b, __b, __b, __b, __b, __b, __b,
                          __b, __b, __b, __b, __b, __b, __b, __b,
                          __b, __b, __b, __b, __b, __b, __b, __b);
+}
+/// Constructs a 256-bit integer vector of [8 x i32], with each of the
+///    32-bit integral vector elements set to the specified 32-bit integral
+///    value.
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic corresponds to the <c> VPERMILPS+VINSERTF128 </c>
+///   instruction.
+///
+/// \param __i
+///    A 32-bit integral value used to initialize each vector element of the
+///    result.
+/// \returns An initialized 256-bit integer vector of [8 x i32].
+static __inline __m256i __DEFAULT_FN_ATTRS
+_mm256_set1_epi32(int __i)
+{
+  return _mm256_set_epi32(__i, __i, __i, __i, __i, __i, __i, __i);
 }
 /// Stores integer values from a 256-bit integer vector to a 32-byte
 ///    aligned memory location pointed to by \a __p.
@@ -761,6 +873,11 @@ static __inline__ __m256i __DEFAULT_FN_ATTRS256
 _mm256_cmpeq_epi8(__m256i __a, __m256i __b)
 {
   return (__m256i)((__v32qi)__a == (__v32qi)__b);
+}
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_cmpeq_epi32(__m256i __a, __m256i __b)
+{
+  return (__m256i)((__v8si)__a == (__v8si)__b);
 }
 static __inline__ int __DEFAULT_FN_ATTRS256
 _mm256_movemask_epi8(__m256i __a)
