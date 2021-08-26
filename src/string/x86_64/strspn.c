@@ -43,11 +43,10 @@ static char* strspn1_fallback(const void *haystack, int n) {
 	for (;;) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n;
 		size_t m2 = *((const size_t*)haystack+1) ^ repeated_n;
-		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits)) {
-			while (*(unsigned char*)haystack == n)
-				haystack = (char*)haystack + 1;
-			return (void*)haystack;
-		}
+		if (m1 != 0 || m2 != 0)
+			for (int i = 0; i < 2*sizeof(size_t); i++)
+				if (((unsigned char*)haystack)[i] != n)
+					return (char*)haystack + i;
 		haystack = (const size_t*)haystack + 2;
 	}
 }
@@ -64,11 +63,10 @@ static char* strspn1_sse2(const void *haystack, int n) {
 	uint32_t repeated_n = lowbits * n;
 	while ((size_t)haystack % 16) {
 		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
-		if (!((m-lowbits) & ~m & highbits)) {
-			while (*(unsigned char*)haystack == n)
-				haystack = (char*)haystack + 1;
-			return (void*)haystack;
-		}
+		if (m != 0)
+			for (int i = 0; i < sizeof(uint32_t); i++)
+				if (((unsigned char*)haystack)[i] != n)
+					return (char*)haystack + i;
 		haystack = (uint32_t*)haystack + 1;
 	}
 	__m128i vn = _mm_set1_epi8(n);
@@ -138,11 +136,10 @@ static char* strspn1_avx2(const void *haystack, int n) {
 	uint32_t repeated_n = lowbits * n;
 	while ((size_t)haystack % 16) {
 		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
-		if (!((m-lowbits) & ~m & highbits)) {
-			while (*(unsigned char*)haystack == n)
-				haystack = (char*)haystack + 1;
-			return (void*)haystack;
-		}
+		if (m != 0)
+			for (int i = 0; i < sizeof(uint32_t); i++)
+				if (((unsigned char*)haystack)[i] != n)
+					return (char*)haystack + i;
 		haystack = (uint32_t*)haystack + 1;
 	}
 	__m128i v16n = _mm_set1_epi8(n);
@@ -214,10 +211,10 @@ static char* strspn2_fallback(const void *haystack, int n1, int n2) {
 	for (;;) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n1;
 		size_t m2 = *(const size_t*)haystack ^ repeated_n2;
-		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits)) {
-			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
-				haystack = (char*)haystack + 1;
-			return (void*)haystack;
+		if (((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits) != highbits) {
+			for (int i = 0; i < sizeof(size_t); i++)
+				if (((unsigned char*)haystack)[i] != n1 && ((unsigned char*)haystack)[i] != n2)
+					return (char*)haystack + i;
 		}
 		haystack = (const size_t*)haystack + 1;
 	}
@@ -237,12 +234,11 @@ static char* strspn2_sse2(const void *haystack, int n1, int n2) {
 	while ((size_t)haystack % 16) {
 		uint32_t m1 = *(const uint32_t*)haystack ^ repeated_n1;
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
-		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits)) {
-			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
-				haystack = (char*)haystack + 1;
-			return (void*)haystack;
-		}
-		haystack = (int32_t*)haystack + 1;
+		if (((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits) != highbits)
+			for (int i = 0; i < sizeof(uint32_t); i++)
+				if (((unsigned char*)haystack)[i] != n1 && ((unsigned char*)haystack)[i] != n2)
+					return (char*)haystack + i;
+		haystack = (uint32_t*)haystack + 1;
 	}
 	__m128i vn1 = _mm_set1_epi8(n1);
 	__m128i vn2 = _mm_set1_epi8(n2);
@@ -297,11 +293,10 @@ static char* strspn2_avx2(const void *haystack, int n1, int n2) {
 	while ((size_t)haystack % 16) {
 		uint32_t m1 = *(const uint32_t*)haystack ^ repeated_n1;
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
-		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits)) {
-			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2)
-				haystack = (char*)haystack + 1;
-			return (void*)haystack;
-		}
+		if (((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2)) & highbits) != highbits)
+			for (int i = 0; i < sizeof(uint32_t); i++)
+				if (((unsigned char*)haystack)[i] != n1 && ((unsigned char*)haystack)[i] != n2)
+					return (char*)haystack + i;
 		haystack = (int32_t*)haystack + 1;
 	}
 	__m128i v16n1 = _mm_set1_epi8(n1);
@@ -360,7 +355,7 @@ static char* strspn3_fallback(const void *haystack, int n1, int n2, int n3) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n1;
 		size_t m2 = *(const size_t*)haystack ^ repeated_n2;
 		size_t m3 = *(const size_t*)haystack ^ repeated_n3;
-		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits)) {
+		if (((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits) != highbits) {
 			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
@@ -385,12 +380,12 @@ static char* strspn3_sse2(const void *haystack, int n1, int n2, int n3) {
 		uint32_t m1 = *(const uint32_t*)haystack ^ repeated_n1;
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		uint32_t m3 = *(const uint32_t*)haystack ^ repeated_n3;
-		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits)) {
+		if (((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits) != highbits) {
 			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
-		haystack = (int32_t*)haystack + 1;
+		haystack = (uint32_t*)haystack + 1;
 	}
 	__m128i vn1 = _mm_set1_epi8(n1);
 	__m128i vn2 = _mm_set1_epi8(n2);
@@ -455,12 +450,12 @@ static char* strspn3_avx2(const void *haystack, int n1, int n2, int n3) {
 		uint32_t m1 = *(const uint32_t*)haystack ^ repeated_n1;
 		uint32_t m2 = *(const uint32_t*)haystack ^ repeated_n2;
 		uint32_t m3 = *(const uint32_t*)haystack ^ repeated_n3;
-		if (!((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits)) {
+		if (((((m1-lowbits) & ~m1) | ((m2-lowbits) & ~m2) | ((m3-lowbits) & ~m3)) & highbits) != highbits) {
 			while (*(unsigned char*)haystack == n1 || *(unsigned char*)haystack == n2 || *(unsigned char*)haystack == n3)
 				haystack = (char*)haystack + 1;
 			return (void*)haystack;
 		}
-		haystack = (int32_t*)haystack + 1;
+		haystack = (uint32_t*)haystack + 1;
 	}
 	__m128i v16n1 = _mm_set1_epi8(n1);
 	__m128i v16n2 = _mm_set1_epi8(n2);
