@@ -38,7 +38,6 @@ static char* strspn1_fallback(const void *haystack, int n) {
 		haystack = (char*)haystack + 1;
 	}
 	size_t lowbits = ~(size_t)0 / 0xff;
-	size_t highbits = lowbits * 0x80;
 	size_t repeated_n = lowbits * n;
 	for (;;) {
 		size_t m1 = *(const size_t*)haystack ^ repeated_n;
@@ -59,7 +58,6 @@ static char* strspn1_sse2(const void *haystack, int n) {
 		haystack = (char*)haystack + 1;
 	}
 	uint32_t lowbits = ~(uint32_t)0 / 0xff;
-	uint32_t highbits = lowbits * 0x80;
 	uint32_t repeated_n = lowbits * n;
 	while ((size_t)haystack % 16) {
 		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
@@ -132,7 +130,6 @@ static char* strspn1_avx2(const void *haystack, int n) {
 		haystack = (char*)haystack + 1;
 	}
 	uint32_t lowbits = ~(uint32_t)0 / 0xff;
-	uint32_t highbits = lowbits * 0x80;
 	uint32_t repeated_n = lowbits * n;
 	while ((size_t)haystack % 16) {
 		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
@@ -205,7 +202,6 @@ static char* strspn2_fallback(const void *haystack, int n1, int n2) {
 		haystack = (char*)haystack + 1;
 	}
 	size_t lowbits = ~(size_t)0 / 0xff;
-	size_t highbits = lowbits * 0x80;
 	size_t repeated_n1 = lowbits * n1;
 	size_t repeated_n2 = lowbits * n2;
 	for (;;) {
@@ -236,7 +232,6 @@ static char* strspn2_sse2(const void *haystack, int n1, int n2) {
 		haystack = (char*)haystack + 1;
 	}
 	uint32_t lowbits = ~(uint32_t)0 / 0xff;
-	uint32_t highbits = lowbits * 0x80;
 	uint32_t repeated_n1 = lowbits * n1;
 	uint32_t repeated_n2 = lowbits * n2;
 	while ((size_t)haystack % 16) {
@@ -304,7 +299,6 @@ static char* strspn2_avx2(const void *haystack, int n1, int n2) {
 		haystack = (char*)haystack + 1;
 	}
 	uint32_t lowbits = ~(uint32_t)0 / 0xff;
-	uint32_t highbits = lowbits * 0x80;
 	uint32_t repeated_n1 = lowbits * n1;
 	uint32_t repeated_n2 = lowbits * n2;
 	while ((size_t)haystack % 16) {
@@ -386,6 +380,7 @@ static void strspn_init() {
 		strspn2_impl = strspn2_fallback;
 	}
 }
+
 static char *strspn1_auto(const void *haystack, int n1) {
 	strspn_init();
 	return strspn1_impl(haystack, n1);
@@ -393,10 +388,6 @@ static char *strspn1_auto(const void *haystack, int n1) {
 static char *strspn2_auto(const void *haystack, int n1, int n2) {
 	strspn_init();
 	return strspn2_impl(haystack, n1, n2);
-}
-static char *strspn3_auto(const void *haystack, int n1, int n2, int n3) {
-	strspn_init();
-	return strspn3_impl(haystack, n1, n2, n3);
 }
 
 size_t strspn(const char *s, const char *accept) {
