@@ -221,5 +221,5 @@ static void *memchr_auto(const void *haystack, int c, size_t n) {
 }
 
 void *memchr(const void *haystack, int c, size_t n) {
-	return memchr_impl(haystack, c, n);
+	return memchr_impl(haystack, (unsigned char)c, n);
 }

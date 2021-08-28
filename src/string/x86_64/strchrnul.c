@@ -191,7 +191,7 @@ static void *rawmemchr2_auto(const void *haystack, int n1, int n2) {
 
 char *__strchrnul(const char *s, int c)
 {
-	return rawmemchr2_impl(s, c, 0);
+	return rawmemchr2_impl(s, (unsigned char)c, 0);
 }
 
 weak_alias(__strchrnul, strchrnul);

@@ -216,5 +216,5 @@ static void *rawmemchr_auto(const void *s, int c) {
 }
 
 void *rawmemchr(const void *s, int c) {
-	return rawmemchr_impl(s, c);
+	return rawmemchr_impl(s, (unsigned char)c);
 }
