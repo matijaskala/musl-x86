@@ -34,7 +34,7 @@ static void *memccpy_naive(void *restrict dest, const void *restrict src, int c,
 	char *d = dest;
 	const char *s = src;
 	for (size_t i = 0; i < n; i++)
-		if ((d[i] = s[i]) == c)
+		if ((d[i] = s[i]) == (char)c)
 			return d+i+1;
 	return NULL;
 }
