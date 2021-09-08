@@ -114,16 +114,20 @@ static void* strrchr_sse2(const void *haystack, int n) {
 		if (_mm_movemask_epi8(or3)) {
 			int mask1 = _mm_movemask_epi8(eqa1);
 			int mask2 = _mm_movemask_epi8(eqa2);
-			if (!mask2)
-				pn = (char*)ptr + 31 - leading_zeros(mask1);
+			if (!mask2) {
+				if (mask1)
+					pn = (char*)ptr + 31 - leading_zeros(mask1);
+			}
 			else if (mask1 % (1 << trailing_zeros(mask2)))
 				return (char*)ptr + 31 - leading_zeros(mask1 % (1 << trailing_zeros(mask2)));
 			else
 				return pn;
 			mask1 = _mm_movemask_epi8(eqb1);
 			mask2 = _mm_movemask_epi8(eqb2);
-			if (!mask2)
-				pn = (char*)ptr + 47 - leading_zeros(mask1);
+			if (!mask2) {
+				if (mask1)
+					pn = (char*)ptr + 47 - leading_zeros(mask1);
+			}
 			else if (mask1 % (1 << trailing_zeros(mask2)))
 				return (char*)ptr + 47 - leading_zeros(mask1 % (1 << trailing_zeros(mask2)));
 			else
@@ -192,16 +196,20 @@ static void* strrchr_avx2(const void *haystack, int n) {
 		if (_mm256_movemask_epi8(or3)) {
 			int mask1 = _mm256_movemask_epi8(eqa1);
 			int mask2 = _mm256_movemask_epi8(eqa2);
-			if (!mask2)
-				pn = (char*)ptr + 31 - leading_zeros(mask1);
+			if (!mask2) {
+				if (mask1)
+					pn = (char*)ptr + 31 - leading_zeros(mask1);
+			}
 			else if (mask1 % (1 << trailing_zeros(mask2)))
 				return (char*)ptr + 31 - leading_zeros(mask1 % (1 << trailing_zeros(mask2)));
 			else
 				return pn;
 			mask1 = _mm256_movemask_epi8(eqb1);
 			mask2 = _mm256_movemask_epi8(eqb2);
-			if (!mask2)
-				pn = (char*)ptr + 63 - leading_zeros(mask1);
+			if (!mask2) {
+				if (mask1)
+					pn = (char*)ptr + 63 - leading_zeros(mask1);
+			}
 			else if (mask1 % (1 << trailing_zeros(mask2)))
 				return (char*)ptr + 63 - leading_zeros(mask1 % (1 << trailing_zeros(mask2)));
 			else
