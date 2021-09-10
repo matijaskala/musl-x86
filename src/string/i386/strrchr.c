@@ -194,8 +194,8 @@ static void* strrchr_avx2(const void *haystack, int n) {
 		__m256i or2 = _mm256_or_si256(eqa2, eqb2);
 		__m256i or3 = _mm256_or_si256(or1, or2);
 		if (_mm256_movemask_epi8(or3)) {
-			int mask1 = _mm256_movemask_epi8(eqa1);
-			int mask2 = _mm256_movemask_epi8(eqa2);
+			unsigned int mask1 = _mm256_movemask_epi8(eqa1);
+			unsigned int mask2 = _mm256_movemask_epi8(eqa2);
 			if (!mask2) {
 				if (mask1)
 					pn = (char*)ptr + 31 - leading_zeros(mask1);
