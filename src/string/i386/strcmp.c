@@ -225,7 +225,9 @@ static int strcmp_sse2(const char *s1, const char *s2)
 			r++;
 			n--;
 		}
-		n = 128 - n;
+		size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
+		size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
+		n = padding1 | padding2;
 	}
 }
 
@@ -367,7 +369,9 @@ static int strcmp_avx2(const char *s1, const char *s2)
 			r++;
 			n--;
 		}
-		n = 128 - n;
+		size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
+		size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
+		n = padding1 | padding2;
 	}
 }
 
