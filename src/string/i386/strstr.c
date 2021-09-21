@@ -176,7 +176,7 @@ static char *strstr##L(const uint8_t *h, const uint8_t *n) \
 	__m256i hw = _mm256_bslli_epi128(_mm256_castsi128_si256(_mm_loadu_si128((void*)(h+(L)-16))), (L)-16); \
 	nw = _mm256_insertf128_si256(nw, _mm_loadu_si128((void*)n), 0); \
 	hw = _mm256_insertf128_si256(hw, _mm_loadu_si128((void*)h), 0); \
-	while (h[(L)]-1) { \
+	while (h[(L)-1]) { \
 		if ((_mm256_movemask_epi8(_mm256_cmpeq_epi8(hw, nw)) & ((1ull << (L)) - 1)) == (1ull << (L)) - 1) \
 			return (void*)h; \
 		hw = _mm256_insert_epi8(_mm256_bsrli_epi128(hw, 1), h[L], (L)-1); \
