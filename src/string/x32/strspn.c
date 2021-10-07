@@ -156,7 +156,7 @@ static char* strspn1_avx2(const void *haystack, int n) {
 		__m256i eqb = _mm256_cmpeq_epi8(b, vn);
 		if (_mm256_movemask_epi8(_mm256_or_si256(eqa, eqb)) != -1) {
 			int mask = _mm256_movemask_epi8(eqa);
-			if (mask)
+			if (mask != -1)
 				return (char*)haystack + trailing_zeros(~mask);
 			mask = _mm256_movemask_epi8(eqb);
 			return (char*)haystack + 32 + trailing_zeros(~mask);
