@@ -825,6 +825,7 @@ static int path_open(const char *name, const char *s, char *buf, size_t buf_size
 			case ENOTDIR:
 			case EACCES:
 			case ENAMETOOLONG:
+			case ENOEXEC:
 				break;
 			default:
 				/* Any negative value but -1 will inhibit
