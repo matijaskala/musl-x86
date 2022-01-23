@@ -168,55 +168,6 @@ static char *strstr16(const uint8_t *h, const uint8_t *n)
 	return NULL;
 }
 
-#define DEFINE_STRSTR(L) \
-__attribute__((__target__("avx2"))) \
-static char *strstr##L(const uint8_t *h, const uint8_t *n) \
-{ \
-	__m256i nw = _mm256_bslli_epi128(_mm256_castsi128_si256(_mm_loadu_si128((void*)(n+(L)-16))), (L)-16); \
-	__m256i hw = _mm256_bslli_epi128(_mm256_castsi128_si256(_mm_loadu_si128((void*)(h+(L)-16))), (L)-16); \
-	nw = _mm256_insertf128_si256(nw, _mm_loadu_si128((void*)n), 0); \
-	hw = _mm256_insertf128_si256(hw, _mm_loadu_si128((void*)h), 0); \
-	while (h[(L)-1]) { \
-		if ((_mm256_movemask_epi8(_mm256_cmpeq_epi8(hw, nw)) & ((1ull << (L)) - 1)) == (1ull << (L)) - 1) \
-			return (void*)h; \
-		hw = _mm256_insert_epi8(_mm256_bsrli_epi128(hw, 1), h[L], (L)-1); \
-		h++; \
-	} \
-	return NULL; \
-}
-
-DEFINE_STRSTR(17)
-DEFINE_STRSTR(18)
-DEFINE_STRSTR(19)
-DEFINE_STRSTR(20)
-DEFINE_STRSTR(21)
-DEFINE_STRSTR(22)
-DEFINE_STRSTR(23)
-DEFINE_STRSTR(24)
-DEFINE_STRSTR(25)
-DEFINE_STRSTR(26)
-DEFINE_STRSTR(27)
-DEFINE_STRSTR(28)
-DEFINE_STRSTR(29)
-DEFINE_STRSTR(30)
-DEFINE_STRSTR(31)
-
-#undef DEFINE_STRSTR
-
-__attribute__((__target__("avx2")))
-static char *strstr32(const uint8_t *h, const uint8_t *n)
-{
-	__m256i nw = _mm256_loadu_si256((void*)n);
-	__m256i hw = _mm256_loadu_si256((void*)h);
-	while (h[31]) {
-		if (_mm256_movemask_epi8(_mm256_cmpeq_epi8(hw, nw)) == -1)
-			return (void*)h;
-		hw = _mm256_insert_epi8(_mm256_bsrli_epi128(hw, 1), h[32], 31);
-		h++;
-	}
-	return NULL;
-}
-
 /*
  * Copyright (c) 2005-2014 Rich Felker, et al.
  *
@@ -438,72 +389,6 @@ char *strstr(const char *h, const char *n)
 			return strstr16((void*)h, (void*)n);
 		if (!h[16])
 			return NULL;
-		if (has_avx2()) {
-			if (!n[17])
-				return strstr17((void*)h, (void*)n);
-			if (!h[17])
-				return NULL;
-			if (!n[18])
-				return strstr18((void*)h, (void*)n);
-			if (!h[18])
-				return NULL;
-			if (!n[19])
-				return strstr19((void*)h, (void*)n);
-			if (!h[19])
-				return NULL;
-			if (!n[20])
-				return strstr20((void*)h, (void*)n);
-			if (!h[20])
-				return NULL;
-			if (!n[21])
-				return strstr21((void*)h, (void*)n);
-			if (!h[21])
-				return NULL;
-			if (!n[22])
-				return strstr22((void*)h, (void*)n);
-			if (!h[22])
-				return NULL;
-			if (!n[23])
-				return strstr23((void*)h, (void*)n);
-			if (!h[23])
-				return NULL;
-			if (!n[24])
-				return strstr24((void*)h, (void*)n);
-			if (!h[24])
-				return NULL;
-			if (!n[25])
-				return strstr25((void*)h, (void*)n);
-			if (!h[25])
-				return NULL;
-			if (!n[26])
-				return strstr26((void*)h, (void*)n);
-			if (!h[26])
-				return NULL;
-			if (!n[27])
-				return strstr27((void*)h, (void*)n);
-			if (!h[27])
-				return NULL;
-			if (!n[28])
-				return strstr28((void*)h, (void*)n);
-			if (!h[28])
-				return NULL;
-			if (!n[29])
-				return strstr29((void*)h, (void*)n);
-			if (!h[29])
-				return NULL;
-			if (!n[30])
-				return strstr30((void*)h, (void*)n);
-			if (!h[30])
-				return NULL;
-			if (!n[31])
-				return strstr31((void*)h, (void*)n);
-			if (!h[31])
-				return NULL;
-			if (!n[32])
-				return strstr32((void*)h, (void*)n);
-			if (!h[32])
-				return NULL;
-		}
 	}
 	size_t l = strnlen(n, 512);
 	if (l < 512) {
