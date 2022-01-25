@@ -32,7 +32,7 @@ static int append(struct match **tail, const char *name, size_t len, int mark)
 	return 0;
 }
 
-static int do_glob(char *buf, size_t pos, int type, char *pat, int flags, int (*errfunc)(const char *path, int err), struct match **tail)
+static int do_glob(char *buf, size_t pos, int type, char *pat, int flags, int (*errfunc)(const char *path, int err), struct match **tail, glob_t *restrict g)
 {
 	/* If GLOB_MARK is unused, we don't care about type. */
 	if (!type && !(flags & GLOB_MARK)) type = DT_REG;
@@ -100,11 +100,11 @@ static int do_glob(char *buf, size_t pos, int type, char *pat, int flags, int (*
 		 * or if that fails, use lstat for determining existence to
 		 * avoid false negatives in the case of broken symlinks. */
 		struct stat st;
-		if ((flags & GLOB_MARK) && (!type||type==DT_LNK) && !stat(buf, &st)) {
+		if ((flags & GLOB_MARK) && (!type||type==DT_LNK) && !((flags & GLOB_ALTDIRFUNC) ? g->gl_stat(buf, &st) : stat(buf, &st))) {
 			if (S_ISDIR(st.st_mode)) type = DT_DIR;
 			else type = DT_REG;
 		}
-		if (!type && lstat(buf, &st)) {
+		if (!type && ((flags & GLOB_ALTDIRFUNC) ? g->gl_lstat(buf, &st) : lstat(buf, &st))) {
 			if (errno!=ENOENT && (errfunc(buf, errno) || (flags & GLOB_ERR)))
 				return GLOB_ABORTED;
 			return 0;
@@ -124,7 +124,7 @@ static int do_glob(char *buf, size_t pos, int type, char *pat, int flags, int (*
 			saved_sep = '\\';
 		}
 	}
-	DIR *dir = opendir(pos ? buf : ".");
+	DIR *dir = (flags & GLOB_ALTDIRFUNC) ? g->gl_opendir(pos ? buf : ".") : opendir(pos ? buf : ".");
 	if (!dir) {
 		if (errfunc(buf, errno) || (flags & GLOB_ERR))
 			return GLOB_ABORTED;
@@ -132,7 +132,7 @@ static int do_glob(char *buf, size_t pos, int type, char *pat, int flags, int (*
 	}
 	int old_errno = errno;
 	struct dirent *de;
-	while (errno=0, de=readdir(dir)) {
+	while (errno=0, de=((flags & GLOB_ALTDIRFUNC) ? g->gl_readdir(dir) : readdir(dir))) {
 		/* Quickly skip non-directories when there's pattern left. */
 		if (p2 && de->d_type && de->d_type!=DT_DIR && de->d_type!=DT_LNK)
 			continue;
@@ -157,15 +157,21 @@ static int do_glob(char *buf, size_t pos, int type, char *pat, int flags, int (*
 
 		memcpy(buf+pos, de->d_name, l+1);
 		if (p2) *p2 = saved_sep;
-		int r = do_glob(buf, pos+l, de->d_type, p2 ? p2 : "", flags, errfunc, tail);
+		int r = do_glob(buf, pos+l, de->d_type, p2 ? p2 : "", flags, errfunc, tail, g);
 		if (r) {
-			closedir(dir);
+			if (flags & GLOB_ALTDIRFUNC)
+				g->gl_closedir(dir);
+			else
+				closedir(dir);
 			return r;
 		}
 	}
 	int readerr = errno;
 	if (p2) *p2 = saved_sep;
-	closedir(dir);
+	if (flags & GLOB_ALTDIRFUNC)
+		g->gl_closedir(dir);
+	else
+		closedir(dir);
 	if (readerr && (errfunc(buf, errno) || (flags & GLOB_ERR)))
 		return GLOB_ABORTED;
 	errno = old_errno;
@@ -249,7 +255,7 @@ int glob(const char *restrict pat, int flags, int (*errfunc)(const char *path, i
 		if ((flags & (GLOB_TILDE | GLOB_TILDE_CHECK)) && *p == '~')
 			error = expand_tilde(&s, buf, &pos);
 		if (!error)
-			error = do_glob(buf, pos, 0, s, flags, errfunc, &tail);
+			error = do_glob(buf, pos, 0, s, flags, errfunc, &tail, g);
 		free(p);
 	}
 
