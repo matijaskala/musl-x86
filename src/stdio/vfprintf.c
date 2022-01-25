@@ -596,7 +596,7 @@ static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg,
 			if (1) a = strerror(errno); else
 		case 's':
 			a = arg.p ? arg.p : "(null)";
-			z = a + strnlen(a, p<0 ? INT_MAX : p);
+			z = a + (p<0 ? strlen(a) : strnlen(a, p));
 			if (p<0 && *z) goto overflow;
 			p = z-a;
 			fl &= ~ZERO_PAD;
