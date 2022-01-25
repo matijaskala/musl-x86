@@ -89,7 +89,21 @@ void explicit_bzero (void *, size_t);
 #endif
 
 #ifdef _GNU_SOURCE
-#define	strdupa(x)	strcpy(alloca(strlen(x)+1),x)
+#ifdef __GNUC__
+#define strdupa(x)	(__extension__({ \
+			const char* __old = (x); \
+			size_t __len = strlen(x) + 1; \
+			char* __new = (char*)alloca(__len); \
+			(char*)memcpy(__new, __old, __len); \
+			}))
+#define strndupa(x,y)	(__extension__({ \
+			const char* __old = (x); \
+			size_t __len = strnlen(x, (y)); \
+			char* __new = (char*)alloca(__len + 1); \
+			__new[__len] = 0; \
+			(char*)memcpy(__new, __old, __len); \
+			}))
+#endif
 int strverscmp (const char *, const char *);
 char *strchrnul(const char *, int);
 char *strcasestr(const char *, const char *);
