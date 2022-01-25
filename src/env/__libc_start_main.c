@@ -15,6 +15,9 @@ extern weak hidden void (*const __init_array_start)(void), (*const __init_array_
 static void dummy1(void *p) {}
 weak_alias(dummy1, __init_ssp);
 
+__attribute__((visibility("hidden")))
+void __init_cpu_features(void);
+
 #define AUX_CNT 38
 
 #ifdef __GNUC__
@@ -23,6 +26,7 @@ __attribute__((__noinline__))
 void __init_libc(char **envp, char *pn)
 {
 	size_t i, *auxv, aux[AUX_CNT] = { 0 };
+	__init_cpu_features();
 	__environ = envp;
 	for (i=0; envp[i]; i++);
 	libc.auxv = auxv = (void *)(envp+i+1);

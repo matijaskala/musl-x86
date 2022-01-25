@@ -1787,6 +1787,11 @@ hidden void __dls2(unsigned char *base, size_t *sp)
 
 void __dls2b(size_t *sp, size_t *auxv)
 {
+	/* Do this first before string functions start caching them */
+	__attribute__((visibility("hidden")))
+	extern void __init_cpu_features(void);
+	__init_cpu_features();
+
 	/* Setup early thread pointer in builtin_tls for ldso/libc itself to
 	 * use during dynamic linking. If possible it will also serve as the
 	 * thread pointer at runtime. */

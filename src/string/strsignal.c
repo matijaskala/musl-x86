@@ -120,7 +120,7 @@ char *strsignal(int signum)
 	signum = sigmap(signum);
 	if (signum - 1U >= _NSIG-1) signum = 0;
 
-	for (; signum--; s++) for (; *s; s++);
+	for (; signum--; s++) s += strlen(s);
 
 	return (char *)LCTRANS_CUR(s);
 }
