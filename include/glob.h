@@ -11,12 +11,17 @@ extern "C" {
 
 #include <bits/alltypes.h>
 
+struct stat;
 typedef struct {
 	size_t gl_pathc;
 	char **gl_pathv;
 	size_t gl_offs;
 	int __dummy1;
-	void *__dummy2[5];
+	void (*gl_closedir) (void *);
+	struct dirent *(*gl_readdir) (void *);
+	void *(*gl_opendir) (const char *);
+	int (*gl_lstat) (const char *__restrict, struct stat *__restrict);
+	int (*gl_stat) (const char *__restrict, struct stat *__restrict);
 } glob_t;
 
 int  glob(const char *__restrict, int, int (*)(const char *, int), glob_t *__restrict);
@@ -33,6 +38,8 @@ void globfree(glob_t *);
 
 #define GLOB_TILDE       0x1000
 #define GLOB_TILDE_CHECK 0x4000
+
+#define GLOB_ALTDIRFUNC 0x200
 
 #define GLOB_NOSPACE 1
 #define GLOB_ABORTED 2
