@@ -184,7 +184,8 @@ static int fnmatch_internal(const char *pat, size_t m, const char *str, size_t n
 			if (k <= 0)
 				return (c==END) ? 0 : FNM_NOMATCH;
 			str += sinc;
-			n -= sinc;
+			if (~n)
+				n -= sinc;
 			kfold = flags & FNM_CASEFOLD ? casefold(k) : k;
 			if (c == BRACKET) {
 				if (!match_bracket(pat, k, kfold))
@@ -193,14 +194,15 @@ static int fnmatch_internal(const char *pat, size_t m, const char *str, size_t n
 				return FNM_NOMATCH;
 			}
 			pat+=pinc;
-			m-=pinc;
+			if (~m)
+				m-=pinc;
 			continue;
 		}
 		break;
 	}
 
 	/* Compute real pat length if it was initially unknown/-1 */
-	m = strnlen(pat, m);
+	m = ~m ? strnlen(pat, m) : strlen(pat);
 	endpat = pat + m;
 
 	/* Find the last * in pat and count chars needed after it */
@@ -222,7 +224,7 @@ static int fnmatch_internal(const char *pat, size_t m, const char *str, size_t n
 	 * because all of pat has already been parsed once. */
 
 	/* Compute real str length if it was initially unknown/-1 */
-	n = strnlen(str, n);
+	n = ~n ? strnlen(str, n) : strlen(str);
 	endstr = str + n;
 	if (n < tailcnt) return FNM_NOMATCH;
 
