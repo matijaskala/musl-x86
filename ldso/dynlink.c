@@ -870,7 +870,7 @@ error:
 	return 0;
 }
 
-static int path_open(const char *name, const char *s, char *buf, size_t buf_size)
+static int path_open(const char *name, const char *s, char *buf, size_t buf_size, struct dso *dso)
 {
 	size_t l;
 	int fd;
@@ -879,12 +879,17 @@ static int path_open(const char *name, const char *s, char *buf, size_t buf_size
 		l = strcspn(s, ":\n");
 		if (l-1 >= INT_MAX) return -1;
 		if (snprintf(buf, buf_size, "%.*s/%s", (int)l, s, name) < buf_size) {
-			if ((fd = open(buf, O_RDONLY|O_CLOEXEC))>=0) return fd;
+			if ((fd = open(buf, O_RDONLY|O_CLOEXEC))>=0) {
+				if (map_library(fd, dso))
+					return fd;
+				close(fd);
+			}
 			switch (errno) {
 			case ENOENT:
 			case ENOTDIR:
 			case EACCES:
 			case ENAMETOOLONG:
+			case ENOEXEC:
 				break;
 			default:
 				/* Any negative value but -1 will inhibit
@@ -1107,6 +1112,10 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
 	if (strchr(name, '/')) {
 		pathname = name;
 		fd = open(name, O_RDONLY|O_CLOEXEC);
+		if (fd >= 0 && !map_library(fd, &temp_dso)) {
+			close(fd);
+			fd = -1;
+		}
 	} else {
 		/* Search for the name to see if it's already loaded */
 		for (p=head->next; p; p=p->next) {
@@ -1116,12 +1125,12 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
 		}
 		if (strlen(name) > NAME_MAX) return 0;
 		fd = -1;
-		if (env_path) fd = path_open(name, env_path, buf, sizeof buf);
+		if (env_path) fd = path_open(name, env_path, buf, sizeof buf, &temp_dso);
 		for (p=needed_by; fd == -1 && p; p=p->needed_by) {
 			if (fixup_rpath(p, buf, sizeof buf) < 0)
 				fd = -2; /* Inhibit further search. */
 			if (p->rpath)
-				fd = path_open(name, p->rpath, buf, sizeof buf);
+				fd = path_open(name, p->rpath, buf, sizeof buf, &temp_dso);
 		}
 		if (fd == -1) {
 			if (!sys_path) {
@@ -1160,15 +1169,17 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
 				}
 			}
 			if (!sys_path) sys_path = "/lib:/usr/local/lib:/usr/lib";
-			fd = path_open(name, sys_path, buf, sizeof buf);
+			fd = path_open(name, sys_path, buf, sizeof buf, &temp_dso);
 		}
 		pathname = buf;
 	}
 	if (fd < 0) return 0;
 	if (fstat(fd, &st) < 0) {
+		unmap_library(&temp_dso);
 		close(fd);
 		return 0;
 	}
+	close(fd);
 	for (p=head->next; p; p=p->next) {
 		if (p->dev == st.st_dev && p->ino == st.st_ino) {
 			/* If this library was previously loaded with a
@@ -1176,13 +1187,14 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
 			 * setup its shortname so it can be found by name. */
 			if (!p->shortname && pathname != name)
 				p->shortname = strrchr(p->name, '/')+1;
-			close(fd);
 			return p;
 		}
 	}
-	map = noload ? 0 : map_library(fd, &temp_dso);
-	close(fd);
-	if (!map) return 0;
+	if (noload) {
+		unmap_library(&temp_dso);
+		return 0;
+	}
+	map = temp_dso.map;
 
 	/* Avoid the danger of getting two versions of libc mapped into the
 	 * same process when an absolute pathname was used. The symbols
