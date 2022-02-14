@@ -32,13 +32,12 @@
 #include "helpers.h"
 
 static void *memchr_fallback(const void *haystack, int needle, size_t size) {
-	if (size >= 2*sizeof(size_t))
-		while ((size_t)haystack % sizeof(size_t)) {
-			if (*(unsigned char*)haystack == needle)
-				return (void*)haystack;
-			haystack = (char*)haystack + 1;
-			size--;
-		}
+	while ((size_t)haystack % sizeof(size_t) && size > 0) {
+		if (*(unsigned char*)haystack == needle)
+			return (void*)haystack;
+		haystack = (char*)haystack + 1;
+		size--;
+	}
 	size_t lowbits = ~(size_t)0 / 0xff;
 	size_t highbits = lowbits * 0x80;
 	size_t repeated_n = lowbits * needle;
@@ -64,28 +63,51 @@ static void *memchr_fallback(const void *haystack, int needle, size_t size) {
 
 __attribute__((__target__("sse2")))
 static void *memchr_sse2(const void *haystack, int needle, size_t size) {
-	if (size >= 16) {
-		while ((size_t)haystack % 4) {
-			if (*(unsigned char*)haystack == needle)
-				return (void*)haystack;
-			haystack = (char*)haystack + 1;
-			size--;
+	while ((size_t)haystack % 4 && size > 0) {
+		if (*(unsigned char*)haystack == needle)
+			return (void*)haystack;
+		haystack = (char*)haystack + 1;
+		size--;
+	}
+	uint32_t lowbits = ~(uint32_t)0 / 0xff;
+	uint32_t highbits = lowbits * 0x80;
+	uint32_t repeated_n = lowbits * needle;
+	while ((size_t)haystack % 16 && size >= 4) {
+		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
+		if ((m-lowbits) & ~m & highbits) {
+			while (*(unsigned char*)haystack != needle)
+				haystack = (char*)haystack + 1;
+			return (void*)haystack;
 		}
-		uint32_t lowbits = ~(uint32_t)0 / 0xff;
-		uint32_t highbits = lowbits * 0x80;
-		uint32_t repeated_n = lowbits * needle;
-		while ((size_t)haystack % 16) {
-			uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
-			if ((m-lowbits) & ~m & highbits) {
-				while (*(unsigned char*)haystack != needle)
-					haystack = (char*)haystack + 1;
-				return (void*)haystack;
-			}
-			haystack = (uint32_t*)haystack + 1;
-			size -= 4;
-		}
+		haystack = (uint32_t*)haystack + 1;
+		size -= 4;
 	}
 	__m128i vn = _mm_set1_epi8(needle);
+	if ((size_t)haystack % 32 && size >= 16) {
+		__m128i x = _mm_load_si128(haystack);
+		__m128i eq = _mm_cmpeq_epi8(x, vn);
+		int mask = _mm_movemask_epi8(eq);
+		if (mask)
+			return (char*)haystack + trailing_zeros(mask);
+		haystack = (const __m128i*)haystack + 1;
+		size -= 16;
+	}
+	if ((size_t)haystack % 64 && size >= 32) {
+		__m128i a = _mm_load_si128(haystack);
+		__m128i b = _mm_load_si128((__m128i*)haystack + 1);
+		__m128i eqa = _mm_cmpeq_epi8(a, vn);
+		__m128i eqb = _mm_cmpeq_epi8(b, vn);
+		__m128i or1 = _mm_or_si128(eqa, eqb);
+		if (_mm_movemask_epi8(or1)) {
+			int mask = _mm_movemask_epi8(eqa);
+			if (mask)
+				return (char*)haystack + trailing_zeros(mask);
+			mask = _mm_movemask_epi8(eqb);
+			return (char*)haystack + 16 + trailing_zeros(mask);
+		}
+		haystack = (const __m128i*)haystack + 2;
+		size -= 32;
+	}
 	while (size >= 64) {
 		__m128i a = _mm_load_si128((const __m128i*)haystack);
 		__m128i b = _mm_load_si128((const __m128i*)haystack+1);
@@ -135,28 +157,52 @@ static void *memchr_sse2(const void *haystack, int needle, size_t size) {
 
 __attribute__((__target__("avx2")))
 static void *memchr_avx2(const void *haystack, int needle, size_t size) {
-	if (size >= 16) {
-		while ((size_t)haystack % 4) {
-			if (*(unsigned char*)haystack == needle)
-				return (void*)haystack;
-			haystack = (char*)haystack + 1;
-			size--;
+	while ((size_t)haystack % 4 && size > 0) {
+		if (*(unsigned char*)haystack == needle)
+			return (void*)haystack;
+		haystack = (char*)haystack + 1;
+		size--;
+	}
+	uint32_t lowbits = ~(uint32_t)0 / 0xff;
+	uint32_t highbits = lowbits * 0x80;
+	uint32_t repeated_n = lowbits * needle;
+	while (size >= 4 && (size_t)haystack % 16) {
+		uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
+		if ((m-lowbits) & ~m & highbits) {
+			while (*(unsigned char*)haystack != needle)
+				haystack = (char*)haystack + 1;
+			return (void*)haystack;
 		}
-		uint32_t lowbits = ~(uint32_t)0 / 0xff;
-		uint32_t highbits = lowbits * 0x80;
-		uint32_t repeated_n = lowbits * needle;
-		while (size >= 4 && (size_t)haystack % 32) {
-			uint32_t m = *(const uint32_t*)haystack ^ repeated_n;
-			if ((m-lowbits) & ~m & highbits) {
-				while (*(unsigned char*)haystack != needle)
-					haystack = (char*)haystack + 1;
-				return (void*)haystack;
-			}
-			haystack = (uint32_t*)haystack + 1;
-			size -= 4;
-		}
+		haystack = (uint32_t*)haystack + 1;
+		size -= 4;
+	}
+	__m128i v16n = _mm_set1_epi8(needle);
+	if ((size_t)haystack % 64 && size >= 16) {
+		__m128i x = _mm_load_si128(haystack);
+		__m128i eq = _mm_cmpeq_epi8(x, v16n);
+		int mask = _mm_movemask_epi8(eq);
+		if (mask)
+			return (char*)haystack + trailing_zeros(mask);
+		haystack = (const __m128i*)haystack + 1;
+		size -= 16;
 	}
 	__m256i vn = _mm256_set1_epi8(needle);
+	if ((size_t)haystack % 128 && size >= 64) {
+		__m256i a = _mm256_load_si256(haystack);
+		__m256i b = _mm256_load_si256((__m256i*)haystack + 1);
+		__m256i eqa = _mm256_cmpeq_epi8(a, vn);
+		__m256i eqb = _mm256_cmpeq_epi8(b, vn);
+		__m256i or1 = _mm256_or_si256(eqa, eqb);
+		if (_mm256_movemask_epi8(or1)) {
+			int mask = _mm256_movemask_epi8(eqa);
+			if (mask)
+				return (char*)haystack + trailing_zeros(mask);
+			mask = _mm256_movemask_epi8(eqb);
+			return (char*)haystack + 32 + trailing_zeros(mask);
+		}
+		haystack = (const __m256i*)haystack + 2;
+		size -= 64;
+	}
 
 	while (size >= 128) {
 		__m256i a = _mm256_load_si256((const __m256i*)haystack);
