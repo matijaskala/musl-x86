@@ -123,6 +123,8 @@ static int strcmp_sse2(const char *s1, const char *s2)
 			return 0;
 		l++;
 		r++;
+		padding1--;
+		padding2--;
 	}
 	const size_t padding = padding1 | padding2;
 	if (!padding)
@@ -293,6 +295,8 @@ static int strcmp_avx2(const char *s1, const char *s2)
 			return 0;
 		l++;
 		r++;
+		padding1--;
+		padding2--;
 	}
 	const size_t padding = padding1 | padding2;
 	if (!padding)
