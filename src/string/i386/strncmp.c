@@ -243,6 +243,8 @@ static int strncmp_sse2(const char *s1, const char *s2, size_t n)
 		size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
 		size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
 		m = padding1 | padding2;
+		if (!m)
+			m = 128;
 	}
 }
 
@@ -412,6 +414,8 @@ static int strncmp_avx2(const char *s1, const char *s2, size_t n)
 		size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
 		size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
 		m = padding1 | padding2;
+		if (!m)
+			m = 128;
 	}
 }
 
