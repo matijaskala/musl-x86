@@ -44,12 +44,13 @@ static size_t strdiff_naive(const char *s1, const char *s2, size_t n)
 __attribute__((__target__("sse2")))
 static size_t strdiff_sse2(const char *s1, const char *s2, size_t n)
 {
-	size_t padding1 = 127 - ((uintptr_t)(s1-1) % 128);
-	size_t padding2 = 127 - ((uintptr_t)(s2-1) % 128);
+	const size_t padding1 = 127 - ((uintptr_t)(s1-1) % 128);
+	const size_t padding2 = 127 - ((uintptr_t)(s2-1) % 128);
+	size_t padding = padding1 < padding2 ? padding1 : padding2;
 	const char *l = s1;
 	const char *r = s2;
 	const __m128i zero = _mm_set1_epi8(0);
-	if ((padding1 < padding2 ? padding1 : padding2) >= 64 && n >= 64) {
+	if (padding >= 64 && n >= 64) {
 		__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 		__m128i r1 = _mm_loadu_si128((const __m128i*)r);
 		__m128i l2 = _mm_loadu_si128((const __m128i*)l+1);
@@ -77,10 +78,9 @@ static size_t strdiff_sse2(const char *s1, const char *s2, size_t n)
 		l += 64;
 		r += 64;
 		n -= 64;
-		padding1 -= 64;
-		padding2 -= 64;
+		padding -= 64;
 	}
-	if ((padding1 < padding2 ? padding1 : padding2) >= 32 && n >= 32) {
+	if (padding >= 32 && n >= 32) {
 		__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 		__m128i r1 = _mm_loadu_si128((const __m128i*)r);
 		__m128i l2 = _mm_loadu_si128((const __m128i*)l+1);
@@ -98,10 +98,9 @@ static size_t strdiff_sse2(const char *s1, const char *s2, size_t n)
 		l += 32;
 		r += 32;
 		n -= 32;
-		padding1 -= 32;
-		padding2 -= 32;
+		padding -= 32;
 	}
-	if ((padding1 < padding2 ? padding1 : padding2) >= 16 && n >= 16) {
+	if (padding >= 16 && n >= 16) {
 		__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 		__m128i r1 = _mm_loadu_si128((const __m128i*)r);
 		int o = _mm_movemask_epi8(_mm_andnot_si128(_mm_cmpeq_epi8(l1, zero), _mm_cmpeq_epi8(l1, r1)));
@@ -112,19 +111,16 @@ static size_t strdiff_sse2(const char *s1, const char *s2, size_t n)
 		l += 16;
 		r += 16;
 		n -= 16;
-		padding1 -= 16;
-		padding2 -= 16;
+		padding -= 16;
 	}
-	while (padding1 && padding2 && n) {
+	while (padding && n) {
 		if (!*l || *l != *r)
 			return l-s1;
 		l++;
 		r++;
 		n--;
-		padding1--;
-		padding2--;
+		padding--;
 	}
-	const size_t padding = padding1 | padding2;
 	if (!padding)
 		while (n >= 64) {
 			__m128i l1 = _mm_loadu_si128((const __m128i*)l);
@@ -155,9 +151,8 @@ static size_t strdiff_sse2(const char *s1, const char *s2, size_t n)
 			r += 64;
 			n -= 64;
 		}
-	size_t m = padding;
 	for (;;) {
-		if (m >= 64 && n >= 64) {
+		if (padding >= 64 && n >= 64) {
 			__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 			__m128i r1 = _mm_loadu_si128((const __m128i*)r);
 			__m128i l2 = _mm_loadu_si128((const __m128i*)l+1);
@@ -185,9 +180,9 @@ static size_t strdiff_sse2(const char *s1, const char *s2, size_t n)
 			l += 64;
 			r += 64;
 			n -= 64;
-			m -= 64;
+			padding -= 64;
 		}
-		if (m >= 32 && n >= 32) {
+		if (padding >= 32 && n >= 32) {
 			__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 			__m128i r1 = _mm_loadu_si128((const __m128i*)r);
 			__m128i l2 = _mm_loadu_si128((const __m128i*)l+1);
@@ -205,9 +200,9 @@ static size_t strdiff_sse2(const char *s1, const char *s2, size_t n)
 			l += 32;
 			r += 32;
 			n -= 32;
-			m -= 32;
+			padding -= 32;
 		}
-		if (m >= 16 && n >= 16) {
+		if (padding >= 16 && n >= 16) {
 			__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 			__m128i r1 = _mm_loadu_si128((const __m128i*)r);
 			int o = _mm_movemask_epi8(_mm_andnot_si128(_mm_cmpeq_epi8(l1, zero), _mm_cmpeq_epi8(l1, r1)));
@@ -218,33 +213,37 @@ static size_t strdiff_sse2(const char *s1, const char *s2, size_t n)
 			l += 16;
 			r += 16;
 			n -= 16;
-			m -= 16;
+			padding -= 16;
 		}
-		while (m && n) {
+		while (padding && n) {
 			if (!*l || *l != *r)
 				return l-s1;
 			l++;
 			r++;
 			n--;
-			m--;
+			padding--;
 		}
 		if (!n)
 			return l-s1-1;
 		size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
 		size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
-		m = padding1 | padding2;
+		padding = padding1 | padding2;
+		if (!padding)
+			padding = 128;
 	}
 }
 
 __attribute__((__target__("avx2")))
 static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 {
-	size_t padding1 = 127 - ((uintptr_t)(s1-1) % 128);
-	size_t padding2 = 127 - ((uintptr_t)(s2-1) % 128);
+	const size_t padding1 = 127 - ((uintptr_t)(s1-1) % 128);
+	const size_t padding2 = 127 - ((uintptr_t)(s2-1) % 128);
+	size_t padding = padding1 < padding2 ? padding1 : padding2;
 	const char *l = s1;
 	const char *r = s2;
 	const __m256i zero = _mm256_set1_epi8(0);
-	if ((padding1 < padding2 ? padding1 : padding2) >= 64 && n >= 64) {
+	const __m128i zero128 = _mm_set1_epi8(0);
+	if (padding >= 64 && n >= 64) {
 		__m256i l1 = _mm256_loadu_si256((const __m256i*)l);
 		__m256i r1 = _mm256_loadu_si256((const __m256i*)r);
 		__m256i l2 = _mm256_loadu_si256((const __m256i*)l+1);
@@ -262,10 +261,9 @@ static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 		l += 64;
 		r += 64;
 		n -= 64;
-		padding1 -= 64;
-		padding2 -= 64;
+		padding -= 64;
 	}
-	if ((padding1 < padding2 ? padding1 : padding2) >= 32 && n >= 32) {
+	if (padding >= 32 && n >= 32) {
 		__m256i l1 = _mm256_loadu_si256((const __m256i*)l);
 		__m256i r1 = _mm256_loadu_si256((const __m256i*)r);
 		int o = _mm256_movemask_epi8(_mm256_andnot_si256(_mm256_cmpeq_epi8(l1, zero), _mm256_cmpeq_epi8(l1, r1)));
@@ -276,11 +274,9 @@ static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 		l += 32;
 		r += 32;
 		n -= 32;
-		padding1 -= 32;
-		padding2 -= 32;
+		padding -= 32;
 	}
-	if ((padding1 < padding2 ? padding1 : padding2) >= 16 && n >= 16) {
-		const __m128i zero128 = _mm_set1_epi8(0);
+	if (padding >= 16 && n >= 16) {
 		__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 		__m128i r1 = _mm_loadu_si128((const __m128i*)r);
 		int o = _mm_movemask_epi8(_mm_andnot_si128(_mm_cmpeq_epi8(l1, zero128), _mm_cmpeq_epi8(l1, r1)));
@@ -291,19 +287,16 @@ static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 		l += 16;
 		r += 16;
 		n -= 16;
-		padding1 -= 16;
-		padding2 -= 16;
+		padding -= 16;
 	}
-	while (padding1 && padding2 && n) {
+	while (padding && n) {
 		if (!*l || *l != *r)
 			return l-s1;
 		l++;
 		r++;
 		n--;
-		padding1--;
-		padding2--;
+		padding--;
 	}
-	const size_t padding = padding1 | padding2;
 	if (!padding)
 		while (n >= 128) {
 			__m256i l1 = _mm256_loadu_si256((const __m256i*)l);
@@ -336,9 +329,8 @@ static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 			r += 128;
 			n -= 128;
 		}
-	size_t m = padding;
 	for (;;) {
-		if (m >= 64 && n >= 64) {
+		if (padding >= 64 && n >= 64) {
 			__m256i l1 = _mm256_loadu_si256((const __m256i*)l);
 			__m256i r1 = _mm256_loadu_si256((const __m256i*)r);
 			__m256i l2 = _mm256_loadu_si256((const __m256i*)l+1);
@@ -356,9 +348,9 @@ static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 			l += 64;
 			r += 64;
 			n -= 64;
-			m -= 64;
+			padding -= 64;
 		}
-		if (m >= 32 && n >= 32) {
+		if (padding >= 32 && n >= 32) {
 			__m256i l1 = _mm256_loadu_si256((const __m256i*)l);
 			__m256i r1 = _mm256_loadu_si256((const __m256i*)r);
 			int o = _mm256_movemask_epi8(_mm256_andnot_si256(_mm256_cmpeq_epi8(l1, zero), _mm256_cmpeq_epi8(l1, r1)));
@@ -369,10 +361,9 @@ static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 			l += 32;
 			r += 32;
 			n -= 32;
-			m -= 32;
+			padding -= 32;
 		}
-		if (m >= 16 && n >= 16) {
-			const __m128i zero128 = _mm_set1_epi8(0);
+		if (padding >= 16 && n >= 16) {
 			__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 			__m128i r1 = _mm_loadu_si128((const __m128i*)r);
 			int o = _mm_movemask_epi8(_mm_andnot_si128(_mm_cmpeq_epi8(l1, zero128), _mm_cmpeq_epi8(l1, r1)));
@@ -383,21 +374,23 @@ static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 			l += 16;
 			r += 16;
 			n -= 16;
-			m -= 16;
+			padding -= 16;
 		}
-		while (m && n) {
+		while (padding && n) {
 			if (!*l || *l != *r)
 				return l-s1;
 			l++;
 			r++;
 			n--;
-			m--;
+			padding--;
 		}
 		if (!n)
 			return l-s1-1;
 		size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
 		size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
-		m = padding1 | padding2;
+		padding = padding1 | padding2;
+		if (!padding)
+			padding = 128;
 	}
 }
 
