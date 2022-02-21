@@ -361,7 +361,7 @@ static size_t strdiff_avx2(const char *s1, const char *s2, size_t n)
 			int o = _mm256_movemask_epi8(_mm256_andnot_si256(_mm256_cmpeq_epi8(l1, zero), _mm256_cmpeq_epi8(l1, r1)));
 			if (o != -1) {
 				o = trailing_zeros(~o);
-				return l[o]-r[o];
+				return l-s1+o;
 			}
 			l += 32;
 			r += 32;
