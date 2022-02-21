@@ -129,16 +129,16 @@ static int strncmp_sse2(const char *s1, const char *s2, size_t n)
 		n--;
 		padding--;
 	}
-	if (!padding)
+	if (padding1 == padding2)
 		while (n >= 64) {
-			__m128i l1 = _mm_loadu_si128((const __m128i*)l);
-			__m128i r1 = _mm_loadu_si128((const __m128i*)r);
-			__m128i l2 = _mm_loadu_si128((const __m128i*)l+1);
-			__m128i r2 = _mm_loadu_si128((const __m128i*)r+1);
-			__m128i l3 = _mm_loadu_si128((const __m128i*)l+2);
-			__m128i r3 = _mm_loadu_si128((const __m128i*)r+2);
-			__m128i l4 = _mm_loadu_si128((const __m128i*)l+3);
-			__m128i r4 = _mm_loadu_si128((const __m128i*)r+3);
+			__m128i l1 = _mm_load_si128((const __m128i*)l);
+			__m128i r1 = _mm_load_si128((const __m128i*)r);
+			__m128i l2 = _mm_load_si128((const __m128i*)l+1);
+			__m128i r2 = _mm_load_si128((const __m128i*)r+1);
+			__m128i l3 = _mm_load_si128((const __m128i*)l+2);
+			__m128i r3 = _mm_load_si128((const __m128i*)r+2);
+			__m128i l4 = _mm_load_si128((const __m128i*)l+3);
+			__m128i r4 = _mm_load_si128((const __m128i*)r+3);
 			__m128i n1 = _mm_andnot_si128(_mm_cmpeq_epi8(l1, zero), _mm_cmpeq_epi8(l1, r1));
 			__m128i n2 = _mm_andnot_si128(_mm_cmpeq_epi8(l2, zero), _mm_cmpeq_epi8(l2, r2));
 			__m128i n3 = _mm_andnot_si128(_mm_cmpeq_epi8(l3, zero), _mm_cmpeq_epi8(l3, r3));
@@ -160,6 +160,11 @@ static int strncmp_sse2(const char *s1, const char *s2, size_t n)
 			n -= 64;
 		}
 	for (;;) {
+		const size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
+		const size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
+		padding = padding1 | padding2;
+		if (!padding)
+			padding = 128;
 		if (padding >= 64 && n >= 64) {
 			__m128i l1 = _mm_loadu_si128((const __m128i*)l);
 			__m128i r1 = _mm_loadu_si128((const __m128i*)r);
@@ -235,11 +240,6 @@ static int strncmp_sse2(const char *s1, const char *s2, size_t n)
 		}
 		if (!n)
 			return 0;
-		size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
-		size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
-		padding = padding1 | padding2;
-		if (!padding)
-			padding = 128;
 	}
 }
 
@@ -309,16 +309,16 @@ static int strncmp_avx2(const char *s1, const char *s2, size_t n)
 		n--;
 		padding--;
 	}
-	if (!padding)
+	if (padding1 == padding2)
 		while (n >= 128) {
-			__m256i l1 = _mm256_loadu_si256((const __m256i*)l);
-			__m256i r1 = _mm256_loadu_si256((const __m256i*)r);
-			__m256i l2 = _mm256_loadu_si256((const __m256i*)l+1);
-			__m256i r2 = _mm256_loadu_si256((const __m256i*)r+1);
-			__m256i l3 = _mm256_loadu_si256((const __m256i*)l+2);
-			__m256i r3 = _mm256_loadu_si256((const __m256i*)r+2);
-			__m256i l4 = _mm256_loadu_si256((const __m256i*)l+3);
-			__m256i r4 = _mm256_loadu_si256((const __m256i*)r+3);
+			__m256i l1 = _mm256_load_si256((const __m256i*)l);
+			__m256i r1 = _mm256_load_si256((const __m256i*)r);
+			__m256i l2 = _mm256_load_si256((const __m256i*)l+1);
+			__m256i r2 = _mm256_load_si256((const __m256i*)r+1);
+			__m256i l3 = _mm256_load_si256((const __m256i*)l+2);
+			__m256i r3 = _mm256_load_si256((const __m256i*)r+2);
+			__m256i l4 = _mm256_load_si256((const __m256i*)l+3);
+			__m256i r4 = _mm256_load_si256((const __m256i*)r+3);
 			_mm_prefetch(l+256, _MM_HINT_NTA);
 			_mm_prefetch(r+256, _MM_HINT_NTA);
 			__m256i n1 = _mm256_andnot_si256(_mm256_cmpeq_epi8(l1, zero), _mm256_cmpeq_epi8(l1, r1));
@@ -342,6 +342,11 @@ static int strncmp_avx2(const char *s1, const char *s2, size_t n)
 			n -= 128;
 		}
 	for (;;) {
+		const size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
+		const size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
+		padding = padding1 | padding2;
+		if (!padding)
+			padding = 128;
 		if (padding >= 64 && n >= 64) {
 			__m256i l1 = _mm256_loadu_si256((const __m256i*)l);
 			__m256i r1 = _mm256_loadu_si256((const __m256i*)r);
@@ -400,11 +405,6 @@ static int strncmp_avx2(const char *s1, const char *s2, size_t n)
 		}
 		if (!n)
 			return 0;
-		size_t padding1 = 127 - ((uintptr_t)(l-1) % 128);
-		size_t padding2 = 127 - ((uintptr_t)(r-1) % 128);
-		padding = padding1 | padding2;
-		if (!padding)
-			padding = 128;
 	}
 }
 
