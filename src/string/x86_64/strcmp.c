@@ -76,7 +76,7 @@ static int strcmp_sse2(const char *s1, const char *s2)
 			else if ((o = _mm_movemask_epi8(n3)) != 0xffff)
 				o = trailing_zeros(~o) + 32;
 			else
-				o = trailing_zeros(~_mm_movemask_epi8(n2)) + 48;
+				o = trailing_zeros(~_mm_movemask_epi8(n4)) + 48;
 			return l[o]-r[o];
 		}
 		l += 64;
@@ -146,7 +146,7 @@ static int strcmp_sse2(const char *s1, const char *s2)
 				else if ((o = _mm_movemask_epi8(n3)) != 0xffff)
 					o = trailing_zeros(~o) + 32;
 				else
-					o = trailing_zeros(~_mm_movemask_epi8(n2)) + 48;
+					o = trailing_zeros(~_mm_movemask_epi8(n4)) + 48;
 				return l[o]-r[o];
 			}
 			l += 64;
@@ -180,7 +180,7 @@ static int strcmp_sse2(const char *s1, const char *s2)
 				else if ((o = _mm_movemask_epi8(n3)) != 0xffff)
 					o = trailing_zeros(~o) + 32;
 				else
-					o = trailing_zeros(~_mm_movemask_epi8(n2)) + 48;
+					o = trailing_zeros(~_mm_movemask_epi8(n4)) + 48;
 				return l[o]-r[o];
 			}
 			l += 64;
