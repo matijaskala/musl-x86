@@ -177,7 +177,7 @@ static void *memchr_avx2(const void *haystack, int needle, size_t size) {
 		size -= 4;
 	}
 	__m128i v16n = _mm_set1_epi8(needle);
-	if ((size_t)haystack % 64 && size >= 16) {
+	while ((size_t)haystack % 64 && size >= 16) {
 		__m128i x = _mm_load_si128(haystack);
 		__m128i eq = _mm_cmpeq_epi8(x, v16n);
 		int mask = _mm_movemask_epi8(eq);
