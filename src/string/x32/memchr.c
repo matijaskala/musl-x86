@@ -233,7 +233,6 @@ static void *memchr_avx2(const void *haystack, int needle, size_t size) {
 		haystack = (const __m256i*)haystack + 4;
 		size -= 128;
 	}
-	__m128i v16n = _mm_set1_epi8(needle);
 	while (size >= 16) {
 		__m128i x = _mm_load_si128(haystack);
 		__m128i eq = _mm_cmpeq_epi8(x, v16n);
